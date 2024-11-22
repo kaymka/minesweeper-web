@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minesweeper</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>Minesweeper</h2>
+
+<div class="settings">
+    <label for="userName">Name:</label>
+    <input type="text" id="userName" placeholder="Enter your name" required>
+    <label for="boardWidth">Width:</label>
+    <input type="number" id="boardWidth" value="10" min="5" max="20">
+    <label for="boardHeight">Height:</label>
+    <input type="number" id="boardHeight" value="10" min="5" max="20">
+    <label for="mineCount">Mines:</label>
+    <input type="number" id="mineCount" value="10" min="1" max="50">
+    <button id="startGameBtn">Start Game</button>
+</div>
+
+<div id="game-container" style="display: none;">
+    <div id="game-board"></div>
+    <p id="game-status"></p>
+</div>
+
+<button id="viewGamesBtn">View Saved Games</button>
+<div id="saved-games"></div>
+
+
+<script src="game.js"></script>
+</body>
+</html>
