@@ -77,5 +77,5 @@ cd minesweeper
 - Сохранённые игры остаются в вашем браузере, пока вы не очистите локальные данные.
 - Для обновления проекта просто загрузите последнюю версию репозитория.
 ## Ссылки
-[GitHub Репозиторий]()
+[GitHub Репозиторий](https://github.com/kaymka/minesweeper-web)
 [Играть через GitHub Pages](https://kaymka.github.io/minesweeper-web/)
