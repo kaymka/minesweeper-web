@@ -56,7 +56,7 @@
 
 1. **Склонируйте репозиторий**:
    ```bash
-   git clone https://github.com/username/minesweeper.git
+   git clone https://github.com/kaymka/minesweeper-web.git
    
 2. **Перейдите в папку проекта**:
 
