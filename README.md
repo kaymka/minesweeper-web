@@ -68,7 +68,7 @@ cd minesweeper
 
 4. **Запуск через GitHub Pages**:
 Проект доступен онлайн через GitHub Pages:
-[Играть в Minesweeper](ссылка на веб сайт)
+[Играть в Minesweeper](https://kaymka.github.io/minesweeper-web/)
 
 ## Технические требования
 - Современный браузер с поддержкой IndexedDB (например, Chrome, Firefox, Edge).
@@ -78,4 +78,4 @@ cd minesweeper
 - Для обновления проекта просто загрузите последнюю версию репозитория.
 ## Ссылки
 [GitHub Репозиторий]()
-[Играть через GitHub Pages]()
+[Играть через GitHub Pages](https://kaymka.github.io/minesweeper-web/)
