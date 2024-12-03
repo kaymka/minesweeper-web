@@ -1,72 +1,122 @@
+import { saveGame, getAllGames, clearDatabase, getGameById } from './db.js';
+
 document.addEventListener('DOMContentLoaded', function () {
-    let db;
-
-    // Открытие базы данных
-    function openDatabase() {
-        const request = indexedDB.open('minegameDB', 1);
-
-        request.onupgradeneeded = function (event) {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains('games')) {
-                const objectStore = db.createObjectStore('games', { keyPath: 'id', autoIncrement: true });
-                objectStore.createIndex('timestamp', 'timestamp', { unique: false });
-            }
-        };
-
-        request.onsuccess = function (event) {
-            db = event.target.result;
-            console.log('Database successfully opened.');
-            loadSavedGames(); // Загрузка игр при запуске
-        };
-
-        request.onerror = function (event) {
-            console.error('Error opening IndexedDB:', event.target.error);
-        };
-    }
-
-    openDatabase();
-
-    let boardWidth, boardHeight, mineCount, boardGrid, cells, gameStatus, gameOver = false, userName;
+    let width, height, mines, gameBoard, cells, gameStatus, gameOver = false, playerName;
     let gameSaved = false;
+    let moves = []; // Хранение шагов игрока
 
-    // Привязка кнопки старта игры
-    const startGameBtn = document.getElementById('startGameBtn');
-    startGameBtn.addEventListener('click', startNewGame);
+    const startBtn = document.getElementById('startBtn');
+    const viewPastGamesBtn = document.getElementById('view-past-games');
+    const clearDbBtn = document.getElementById('clear-db');
+    const helpBtn = document.getElementById('help');
+    const closeHelpBtn = document.getElementById('close-help');
+    const replayContainer = document.getElementById('replay-container');
+    const closeReplayBtn = document.getElementById('close-replay');
 
-    // Привязка кнопки просмотра сохраненных игр
-    const viewGamesBtn = document.getElementById('viewGamesBtn');
-    viewGamesBtn.addEventListener('click', loadSavedGames);
+    startBtn.addEventListener('click', startNewGame);
+    viewPastGamesBtn.addEventListener('click', displayPastGames);
+    clearDbBtn.addEventListener('click', async () => {
+        await clearDatabase();
+        alert('Database cleared!');
+        displayPastGames();
+    });
+    helpBtn.addEventListener('click', () => {
+        document.getElementById('help-container').style.display = 'block';
+    });
+    closeHelpBtn.addEventListener('click', () => {
+        document.getElementById('help-container').style.display = 'none';
+    });
+    closeReplayBtn.addEventListener('click', () => {
+        replayContainer.style.display = 'none';
+    });
 
-    function startNewGame() {
-        userName = document.getElementById('userName').value.trim();
-        if (!userName) {
+    async function startNewGame() {
+        playerName = document.getElementById('player-name').value.trim();
+        if (!playerName) {
             alert('Please enter your name before starting the game.');
             return;
         }
 
-        boardWidth = parseInt(document.getElementById('boardWidth').value);
-        boardHeight = parseInt(document.getElementById('boardHeight').value);
-        mineCount = parseInt(document.getElementById('mineCount').value);
+        width = parseInt(document.getElementById('width').value);
+        height = parseInt(document.getElementById('height').value);
+        mines = parseInt(document.getElementById('mines').value);
 
-        boardGrid = document.getElementById('game-board');
+        gameBoard = document.getElementById('game-board');
         gameStatus = document.getElementById('game-status');
         gameOver = false;
         gameSaved = false;
+        moves = []; // Сброс шагов при новой игре
 
-        boardGrid.innerHTML = '';
+        gameBoard.innerHTML = '';
         gameStatus.textContent = '';
-
         cells = [];
-        const totalCells = boardWidth * boardHeight;
-        const minePositions = generateMines(totalCells, mineCount);
+        const minePositions = generateMines(width * height, mines);
 
-        // Создание игрового поля
-        for (let i = 0; i < boardHeight; i++) {
-            for (let j = 0; j < boardWidth; j++) {
+        createBoard(width, height, minePositions);
+        document.querySelector('.game-container').style.display = 'block';
+    }
+
+    async function saveGameResult(winStatus) {
+        if (!gameSaved) {
+            const gameData = {
+                playerName,
+                size: `${width}x${height}`,
+                mines,
+                winStatus: winStatus ? 'Won' : 'Lost',
+                timestamp: new Date().toISOString(),
+                moves // Сохранение шагов
+            };
+            await saveGame(gameData);
+            gameSaved = true;
+        }
+    }
+
+    async function displayPastGames() {
+        const games = await getAllGames();
+        const gameList = document.getElementById('game-list');
+        gameList.innerHTML = '';
+        games.forEach(game => {
+            const listItem = document.createElement('li');
+            const timestamp = new Date(game.timestamp).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+            listItem.textContent = `Player: ${game.playerName} - Game on ${timestamp} - Size: ${game.size} - Mines: ${game.mines} - Result: ${game.winStatus} - Сlick to view steps`;
+            listItem.addEventListener('click', () => replayGame(game.id));
+            gameList.appendChild(listItem);
+        });
+    }
+
+    async function replayGame(id) {
+        const gameData = await getGameById(id);
+        if (!gameData) {
+            alert('Game not found!');
+            return;
+        }
+
+        replayContainer.style.display = 'block';
+        const replayList = document.getElementById('replay-list');
+        replayList.innerHTML = `<strong>Game Replay:</strong> Player: ${gameData.playerName} | Size: ${gameData.size} | Mines: ${gameData.mines} | Result: ${gameData.winStatus}`;
+
+        if (gameData.moves && gameData.moves.length > 0) {
+            const movesList = document.createElement('ul');
+            gameData.moves.forEach((move, index) => {
+                const moveItem = document.createElement('li');
+                moveItem.textContent = `Move ${index + 1}: ${move.row}x${move.col} - ${move.result}`;
+                movesList.appendChild(moveItem);
+            });
+            replayList.appendChild(movesList);
+        } else {
+            const noMoves = document.createElement('p');
+            noMoves.textContent = 'No moves recorded for this game.';
+            replayList.appendChild(noMoves);
+        }
+    }
+
+    function createBoard(width, height, minePositions) {
+        for (let i = 0; i < height; i++) {
+            for (let j = 0; j < width; j++) {
                 const cell = document.createElement('div');
                 cell.classList.add('cell');
-                cell.dataset.index = i * boardWidth + j;
-                boardGrid.appendChild(cell);
+                cell.dataset.index = i * width + j;
+                gameBoard.appendChild(cell);
                 cells.push(cell);
 
                 cell.addEventListener('click', () => {
@@ -75,11 +125,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         }
-
-        boardGrid.style.gridTemplateColumns = `repeat(${boardWidth}, 30px)`;
-        boardGrid.style.gridTemplateRows = `repeat(${boardHeight}, 30px)`;
-
-        document.getElementById('game-container').style.display = 'block';
+        gameBoard.style.gridTemplateColumns = `repeat(${width}, 40px)`;
+        gameBoard.style.gridTemplateRows = `repeat(${height}, 40px)`;
     }
 
     function generateMines(totalCells, mineCount) {
@@ -90,75 +137,61 @@ document.addEventListener('DOMContentLoaded', function () {
         return minePositions;
     }
 
-    function handleCellClick(cell, minePositions) {
-        const index = parseInt(cell.dataset.index);
+    async function handleCellClick(cell, minePositions) {
+    if (gameOver || gameSaved) return; // Игра завершена или уже сохранена, пропускаем обработку
 
-        if (minePositions.has(index)) {
-            cell.classList.add('revealed', 'mine');
-            gameOver = true;
-            gameStatus.textContent = 'Game Over!';
-            if (!gameSaved) {
-                saveGame(false);
-                gameSaved = true;
-            }
-            return;
-        }
+    const index = parseInt(cell.dataset.index);
+    const row = Math.floor(index / width);
+    const col = index % width;
 
-        revealCell(cell, minePositions);
+    if (minePositions.has(index)) {
+        cell.classList.add('revealed', 'mine');
+        moves.push({ row, col, result: 'Mine' }); // Запись шага
+        gameOver = true;
+        gameStatus.textContent = 'Game Over!';
+        await saveGameResult(false); // Сохраняем игру при поражении
+        return;
     }
 
-    function revealCell(cell, minePositions) {
-        const index = parseInt(cell.dataset.index);
-        if (cell.classList.contains('revealed')) return;
+    moves.push({ row, col, result: 'Safe' }); // Запись шага
+    revealCell(cell, minePositions);
 
+    if (checkForWin(minePositions)) {
+        gameStatus.textContent = 'You Win!';
+        gameOver = true;
+        await saveGameResult(true); // Сохраняем игру при победе
+    }
+}
+
+
+    function revealCell(cell, minePositions) {
+        if (cell.classList.contains('revealed')) return;
         cell.classList.add('revealed');
-        const adjacentMines = countAdjacentMines(index, minePositions);
+        const adjacentMines = countAdjacentMines(parseInt(cell.dataset.index), minePositions);
 
         if (adjacentMines > 0) {
             cell.textContent = adjacentMines;
         } else {
-            revealAdjacentCells(index, minePositions);
+            revealAdjacentCells(parseInt(cell.dataset.index), minePositions);
         }
 
-        // Проверка на победу
-        if (checkForWin(minePositions) && !gameSaved) {
-            gameStatus.textContent = 'You Win!';
-            gameOver = true;
-            saveGame(true);
-            gameSaved = true;
-        }
-    }
 
-    function revealAdjacentCells(index, minePositions) {
-        const neighbors = [
-            -1, 1, -boardWidth, boardWidth,
-            -boardWidth - 1, -boardWidth + 1, boardWidth - 1, boardWidth + 1
-        ];
-
-        neighbors.forEach(offset => {
-            const neighborIndex = index + offset;
-            if (neighborIndex < 0 || neighborIndex >= boardWidth * boardHeight) return;
-
-            const neighborCell = cells[neighborIndex];
-            if (!neighborCell.classList.contains('revealed') && !minePositions.has(neighborIndex)) {
-                revealCell(neighborCell, minePositions);
-            }
-        });
     }
 
     function countAdjacentMines(index, minePositions) {
-        const neighbors = [
-            -1, 1, -boardWidth, boardWidth,
-            -boardWidth - 1, -boardWidth + 1, boardWidth - 1, boardWidth + 1
-        ];
-        let mineCount = 0;
+        const neighbors = [-1, 1, -width, width, -width - 1, -width + 1, width - 1, width + 1];
+        return neighbors.reduce((count, offset) => count + (minePositions.has(index + offset) ? 1 : 0), 0);
+    }
 
+    function revealAdjacentCells(index, minePositions) {
+        const neighbors = [-1, 1, -width, width, -width - 1, -width + 1, width - 1, width + 1];
         neighbors.forEach(offset => {
             const neighborIndex = index + offset;
-            if (minePositions.has(neighborIndex)) mineCount++;
+            const neighborCell = cells[neighborIndex];
+            if (neighborCell && !neighborCell.classList.contains('revealed') && !minePositions.has(neighborIndex)) {
+                revealCell(neighborCell, minePositions);
+            }
         });
-
-        return mineCount;
     }
 
     function checkForWin(minePositions) {
@@ -166,58 +199,5 @@ document.addEventListener('DOMContentLoaded', function () {
             const index = parseInt(cell.dataset.index);
             return minePositions.has(index) || cell.classList.contains('revealed');
         });
-    }
-
-    // Сохранение игры
-    function saveGame(winStatus) {
-        const gameData = {
-            userName: userName,
-            size: `${boardWidth}x${boardHeight}`,
-            mineCount: mineCount,
-            winStatus: winStatus ? 'Win' : 'Loss',
-            timestamp: new Date().toISOString(),
-        };
-
-        const transaction = db.transaction(['games'], 'readwrite');
-        const objectStore = transaction.objectStore('games');
-        const request = objectStore.add(gameData);
-
-        request.onsuccess = function (event) {
-            console.log('Game saved with ID:', event.target.result);
-        };
-
-        request.onerror = function (event) {
-            console.error('Error saving game:', event.target.error);
-        };
-    }
-
-    // Загрузка сохраненных игр
-    function loadSavedGames() {
-        const savedGamesContainer = document.getElementById('saved-games');
-        savedGamesContainer.innerHTML = '';
-
-        const transaction = db.transaction(['games'], 'readonly');
-        const objectStore = transaction.objectStore('games');
-        const request = objectStore.getAll();
-
-        request.onsuccess = function (event) {
-            const games = event.target.result;
-
-            if (games.length === 0) {
-                savedGamesContainer.textContent = 'No saved games found.';
-                return;
-            }
-
-            games.forEach(game => {
-                const gameElement = document.createElement('div');
-                gameElement.classList.add('saved-game');
-                gameElement.textContent = `Player: ${game.userName}, Size: ${game.size}, Mines: ${game.mineCount}, Result: ${game.winStatus}, Date: ${new Date(game.timestamp).toLocaleString()}`;
-                savedGamesContainer.appendChild(gameElement);
-            });
-        };
-
-        request.onerror = function (event) {
-            console.error('Error loading saved games:', event.target.error);
-        };
     }
 });

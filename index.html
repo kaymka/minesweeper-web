@@ -1,36 +1,75 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minesweeper</title>
+    <title>Игра Сапер</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Minesweeper</h2>
+<h2>Сапер</h2>
 
-<div class="settings">
-    <label for="userName">Name:</label>
-    <input type="text" id="userName" placeholder="Enter your name" required>
-    <label for="boardWidth">Width:</label>
-    <input type="number" id="boardWidth" value="10" min="5" max="20">
-    <label for="boardHeight">Height:</label>
-    <input type="number" id="boardHeight" value="10" min="5" max="20">
-    <label for="mineCount">Mines:</label>
-    <input type="number" id="mineCount" value="10" min="1" max="50">
-    <button id="startGameBtn">Start Game</button>
+<div>
+    <button id="view-past-games">Просмотреть прошлые игры</button>
+    <button id="clear-db">Очистить базу данных</button>
+    <button id="help">Справка</button>
+    <ul id="game-list"></ul>
 </div>
 
-<div id="game-container" style="display: none;">
+<div class="settings">
+    <label for="player-name">Имя игрока:</label>
+    <input type="text" id="player-name" placeholder="Введите ваше имя" required>
+    <label for="width">Ширина:</label>
+    <input type="number" id="width" value="10" min="5" max="30">
+    <label for="height">Высота:</label>
+    <input type="number" id="height" value="10" min="5" max="30">
+    <label for="mines">Мины:</label>
+    <input type="number" id="mines" value="10" min="1" max="100">
+    <button id="startBtn">Новая игра</button>
+</div>
+
+<div class="game-container">
     <div id="game-board"></div>
     <p id="game-status"></p>
 </div>
 
-<button id="viewGamesBtn">View Saved Games</button>
-<div id="saved-games"></div>
+<div id="replay-container" style="display: none;">
+    <h3>Повтор игры</h3>
+    <ul id="replay-list"></ul>
+    <button id="close-replay">Закрыть</button>
+</div>
 
+<div id="help-container" style="display: none;">
+    <h3>Справка</h3>
+    <p>
+        <strong>Доступные функции:</strong><br>
+        - <em>Новая игра:</em> Позволяет начать новую игру с заданными параметрами (ширина, высота и количество мин).<br>
+        - <em>Просмотр прошлых игр:</em> Открывает список всех сохранённых игр. Чтобы посмотреть повтор конкретной игры, нажмите на кнопку <strong>"Просмотреть прошлые игры"</strong> и выберите интересующую игру из списка.<br>
+        - <em>Повтор игры:</em> Показывает пошаговую историю выбранной игры, включая информацию о каждом ходе (координаты и результат).<br>
+        - <em>Очистка базы данных:</em> Удаляет все сохранённые игры из базы данных.<br>
+    </p>
+    <p>
+        <strong>Как играть:</strong><br>
+        1. Введите ваше имя в поле "Имя игрока".<br>
+        2. Установите параметры игры (ширина, высота и количество мин).<br>
+        3. Нажмите кнопку "Новая игра", чтобы начать новую игру.<br>
+        4. Щёлкайте по ячейкам на игровом поле, чтобы открыть их. Если вы откроете ячейку с миной, игра закончится.<br>
+        5. Цель игры — открыть все ячейки без мин.<br>
+    </p>
+    <p>
+        <strong>Повтор игры:</strong><br>
+        Чтобы просмотреть повтор игры:<br>
+        1. Нажмите кнопку <strong>"Просмотреть прошлые игры"</strong>.<br>
+        2. В появившемся списке выберите игру, кликнув на неё.<br>
+        3. Повтор игры будет отображён в отдельном окне, где вы сможете увидеть все шаги и результат.<br>
+    </p>
+    <button id="close-help">Закрыть</button>
+</div>
 
-<script src="game.js"></script>
+<script src="https://unpkg.com/idb@7.0.0/build/umd.js"></script>
+<script type="module" src="./db.js"></script>
+<script type="module" src="./game.js"></script>
+
 </body>
 </html>
